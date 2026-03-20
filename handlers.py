@@ -166,9 +166,9 @@ async def download_oferta_callback(query: types.CallbackQuery):
 @router.callback_query(F.data == "menu")
 async def menu_callback(query: types.CallbackQuery):
     try:
+        await query.answer()
         user = await _ensure_user(query.from_user)
         if not user:
-            await query.answer("Пользователь не найден. Нажмите /start и попробуйте снова.", show_alert=True)
             return
 
         active_sub = await db.get_active_subscription(user["id"])
@@ -204,8 +204,6 @@ async def menu_callback(query: types.CallbackQuery):
             if ROBOKASSA_TEST_BUTTON_ENABLED:
                 text += "\n\nДля проверки магазина доступна отдельная кнопка тестового платежа."
             await query.message.edit_text(text, reply_markup=get_main_keyboard())
-
-        await query.answer()
 
     except Exception as e:
         logger.error("Error in menu_callback: %s", e)
@@ -278,9 +276,9 @@ async def start(message: types.Message):
 @router.callback_query(F.data == "buy_subscription")
 async def buy_subscription(query: types.CallbackQuery):
     try:
+        await query.answer()
         user = await _ensure_user(query.from_user)
         if not user:
-            await query.answer("Нажмите /start и попробуйте снова.", show_alert=True)
             return
 
         payment = robokassa.create_payment(
@@ -304,7 +302,6 @@ async def buy_subscription(query: types.CallbackQuery):
             "После успешной оплаты подписка активируется автоматически."
         )
         await query.message.edit_text(text, reply_markup=get_payment_keyboard(payment["payment_url"]))
-        await query.answer()
 
     except Exception as e:
         logger.error("Error in buy_subscription: %s", e)
@@ -314,9 +311,9 @@ async def buy_subscription(query: types.CallbackQuery):
 @router.callback_query(F.data == "test_payment")
 async def test_payment(query: types.CallbackQuery):
     try:
+        await query.answer()
         user = await _ensure_user(query.from_user)
         if not user:
-            await query.answer("Нажмите /start и попробуйте снова.", show_alert=True)
             return
 
         payment = robokassa.create_payment(
@@ -341,7 +338,6 @@ async def test_payment(query: types.CallbackQuery):
             "После успешного callback тестовый платеж будет обработан тем же сценарием, что и обычный."
         )
         await query.message.edit_text(text, reply_markup=get_payment_keyboard(payment["payment_url"], is_test=True))
-        await query.answer()
 
     except Exception as e:
         logger.error("Error in test_payment: %s", e)
@@ -351,14 +347,13 @@ async def test_payment(query: types.CallbackQuery):
 @router.callback_query(F.data == "renew_subscription")
 async def renew_subscription(query: types.CallbackQuery):
     try:
+        await query.answer()
         user = await db.get_user_by_telegram_id(query.from_user.id)
         if not user:
-            await query.answer("Пользователь не найден", show_alert=True)
             return
 
         active_sub = await db.get_active_subscription(user["id"])
         if not active_sub:
-            await query.answer("Активная подписка не найдена", show_alert=True)
             return
 
         payment = robokassa.create_payment(
@@ -382,7 +377,6 @@ async def renew_subscription(query: types.CallbackQuery):
             "После успешной оплаты продление активируется автоматически."
         )
         await query.message.edit_text(text, reply_markup=get_payment_keyboard(payment["payment_url"]))
-        await query.answer()
 
     except Exception as e:
         logger.error("Error in renew_subscription: %s", e)
@@ -406,14 +400,13 @@ async def cancel_payment(query: types.CallbackQuery):
 @router.callback_query(F.data == "cancel_active_subscription")
 async def cancel_active_subscription(query: types.CallbackQuery):
     try:
+        await query.answer()
         user = await db.get_user_by_telegram_id(query.from_user.id)
         if not user:
-            await query.answer("Пользователь не найден", show_alert=True)
             return
 
         active_sub = await db.get_active_subscription(user["id"])
         if not active_sub:
-            await query.answer("Активная подписка не найдена", show_alert=True)
             return
 
         end_date = active_sub["end_date"]
@@ -424,7 +417,6 @@ async def cancel_active_subscription(query: types.CallbackQuery):
             "затем будет закрыт автоматически."
         )
         await query.message.edit_text(text, reply_markup=get_cancel_confirm_keyboard())
-        await query.answer()
 
     except Exception as e:
         logger.error("Error in cancel_active_subscription: %s", e)
@@ -434,14 +426,13 @@ async def cancel_active_subscription(query: types.CallbackQuery):
 @router.callback_query(F.data == "confirm_cancel_subscription")
 async def confirm_cancel_subscription(query: types.CallbackQuery):
     try:
+        await query.answer()
         user = await db.get_user_by_telegram_id(query.from_user.id)
         if not user:
-            await query.answer("Пользователь не найден", show_alert=True)
             return
 
         active_sub = await db.get_active_subscription(user["id"])
         if not active_sub:
-            await query.answer("Активная подписка не найдена", show_alert=True)
             return
 
         end_date = active_sub["end_date"]
