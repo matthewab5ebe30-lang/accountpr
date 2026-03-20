@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: telegram_bot_db
+    environment:
+      POSTGRES_DB: subscription_bot
+      POSTGRES_USER: subscription_user
+      POSTGRES_PASSWORD: secure_password_here
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U subscription_user -d subscription_bot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  bot:
+    build: .
+    container_name: telegram_bot
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      BOT_TOKEN: ${BOT_TOKEN}
+      ADMIN_ID: ${ADMIN_ID}
+      CHANNEL_ID: ${CHANNEL_ID}
+      ROBOKASSA_MERCHANT_LOGIN: ${ROBOKASSA_MERCHANT_LOGIN}
+      ROBOKASSA_PASSWORD_1: ${ROBOKASSA_PASSWORD_1}
+      ROBOKASSA_PASSWORD_2: ${ROBOKASSA_PASSWORD_2}
+      ROBOKASSA_IS_TEST: ${ROBOKASSA_IS_TEST}
+      SUBSCRIPTION_PRICE: ${SUBSCRIPTION_PRICE}
+      DATABASE_URL: postgresql://subscription_user:secure_password_here@postgres:5432/subscription_bot
+      WEBHOOK_HOST: ${WEBHOOK_HOST}
+      WEBHOOK_PORT: 8443
+      WEBHOOK_PATH: /notification_url
+    ports:
+      - "8443:8443"
+    restart: unless-stopped
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - bot_network
+
+volumes:
+  postgres_data:
+
+networks:
+  bot_network:
+    driver: bridge

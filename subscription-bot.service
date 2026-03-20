@@ -1,0 +1,17 @@
+[Unit]
+Description=Telegram Subscription Bot
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=bot
+WorkingDirectory=/home/bot/accountpr
+Environment="PATH=/home/bot/accountpr/venv/bin"
+ExecStart=/home/bot/accountpr/venv/bin/python3 main.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
