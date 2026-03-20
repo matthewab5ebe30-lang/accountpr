@@ -1,9 +1,11 @@
 """Telegram bot message and callback handlers"""
 import logging
 from datetime import datetime
+from pathlib import Path
 
 from aiogram import F, Router, types
 from aiogram.filters import Command, CommandStart
+from aiogram.types import FSInputFile
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from config import (
@@ -77,7 +79,7 @@ def get_menu_keyboard() -> types.InlineKeyboardMarkup:
 
 def get_info_keyboard() -> types.InlineKeyboardMarkup:
     kb = InlineKeyboardBuilder()
-    kb.button(text="📄 Скачать оферту", url=OFFERTA_URL)
+    kb.button(text="📄 Скачать оферту", callback_data="download_oferta")
     kb.button(text="🏠 Меню", callback_data="menu")
     kb.adjust(1)
     return kb.as_markup()
@@ -132,6 +134,26 @@ async def info_callback(query: types.CallbackQuery):
     except Exception as e:
         logger.error("Error in info_callback: %s", e)
         await query.answer(f"❌ Ошибка: {str(e)}", show_alert=True)
+
+
+@router.callback_query(F.data == "download_oferta")
+async def download_oferta_callback(query: types.CallbackQuery):
+    try:
+        await query.answer()
+        project_dir = Path(__file__).resolve().parent
+        legal_dir = project_dir / "public" / "legal"
+        for file_name in ("oferta.pdf", "oferta.html", "oferta.md"):
+            offer_path = legal_dir / file_name
+            if offer_path.is_file():
+                await query.message.answer_document(
+                    FSInputFile(offer_path, filename="oferta.pdf"),
+                    caption="📄 Оферта",
+                )
+                return
+        await query.message.answer("❌ Файл оферты не найден. Обратитесь к администратору.")
+    except Exception as e:
+        logger.error("Error in download_oferta_callback: %s", e)
+        await query.answer("❌ Не удалось отправить файл", show_alert=True)
 
 
 @router.callback_query(F.data == "menu")
