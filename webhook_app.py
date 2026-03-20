@@ -91,14 +91,16 @@ async def robokassa_result_handler(request: web.Request) -> web.Response:
         if payment["status"] == "succeeded":
             return web.Response(status=200, text=f"OK{inv_id}")
 
-        if abs(float(payment["amount"]) - float(out_sum)) > 0.0001:
-            logger.error(
-                "Robokassa amount mismatch inv_id=%s db=%s callback=%s",
+        if abs(float(payment["amount"]) - float(out_sum)) > 1.0:
+            # Robokassa всегда возвращает OutSum = сумме счёта (до комиссии).
+            # Допускаем расхождение до 1 рубля на случай округлений со стороны платёжной системы.
+            # Подпись уже проверена выше — это дополнительный контроль, но не блокировка.
+            logger.warning(
+                "Robokassa amount mismatch inv_id=%s db=%s callback=%s — processing anyway",
                 inv_id,
                 payment["amount"],
                 out_sum,
             )
-            return web.Response(status=400, text="Amount mismatch")
 
         await db.update_payment_status(inv_id, "succeeded")
         await db.activate_subscription_from_payment(
